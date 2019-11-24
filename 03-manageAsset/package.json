@@ -1,0 +1,19 @@
+{
+  "name": "01-init",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx webpack --config webpack.config.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "lodash": "^4.17.15",
+    "webpack": "4.41.2",
+    "webpack-cli": "^3.3.10",
+    "yarn": "^1.19.2"
+  }
+}
