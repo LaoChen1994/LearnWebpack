@@ -1,0 +1,26 @@
+{
+  "name": "01-init",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx webpack --config webpack.config.js",
+    "start": "webpack-dev-server --hotOnly --open",
+    "server": "node dev-server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "clean-webpack-plugin": "^3.0.0",
+    "css-loader": "^3.2.0",
+    "html-webpack-plugin": "^3.2.0",
+    "lodash": "^4.17.15",
+    "style-loader": "^1.0.0",
+    "webpack": "4.41.2",
+    "webpack-cli": "^3.3.10",
+    "webpack-dev-server": "^3.9.0",
+    "yarn": "^1.19.2"
+  }
+}

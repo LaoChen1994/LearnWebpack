@@ -23,6 +23,10 @@ module.exports = {
       {
         test: /\.xml/gi,
         use: ['xml-loader']
+      },
+      {
+        test: /\.csv/gi,
+        use: ['csv-loader']
       }
     ]
   }
