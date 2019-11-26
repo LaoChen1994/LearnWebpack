@@ -548,7 +548,7 @@ module.exports = {
 >
 > 猜测：当打包文件已经存在于 index.js 时候, 则不更换其名称，直接引用即可
 >
-> ​ -> 文件已经有被打包过则直接引用，不生成新名称的打包文件
+> -> 文件已经有被打包过则直接引用，不生成新名称的打包文件
 
 - 加入 Math.js 进行探查
 
@@ -583,3 +583,127 @@ getComponent().then(node => document.body.appendChild(node));
 - 结果
 
 **当多个包且 chunkName 设置不同时, 此时 chunkName 为第一个打得包的 chunkName**
+
+---
+
+### 8. 懒加载
+
+#### 1. webpack 配置
+
+```javascript
+const path = require('path');
+const htmlWebpackPlugin = require('html-webpack-plugin');
+
+module.exports = {
+  entry: './src/index.js',
+  output: {
+    filename: 'bundle.js',
+    path: path.resolve(__dirname, 'dist'),
+    // 添加懒加载模块的ｃｈｕｎｋName
+    chunkFilename: '[name].bundle.js'
+  },
+  plugins: [new htmlWebpackPlugin()],
+  mode: 'development'
+};
+```
+
+#### 2. 添加懒加载模块
+
+```javascript
+import _ from 'lodash';
+
+var elem = document.createElement('div');
+var btn = document.createElement('button');
+
+elem.innerText = _.join(['first', 'webpack'], ' ');
+btn.innerHTML = 'Click Me';
+btn.onclick = e =>
+  import(/* webpackChunkName: "printjs" */ './print').then(func =>
+    func.default()
+  );
+
+elem.appendChild(btn);
+document.body.appendChild(elem);
+```
+
+#### 3. 查看打包结果
+
+![](./img/选区_069.png)
+
+#### 4. 源码分析
+
+- [参考资料](https://www.cnblogs.com/zhaoweikai/p/10945780.html)
+
+- bundle.js 文件分析
+
+  - installedModules:用来记录已经导入的模块信息(.js 文件)
+
+    - i: 该模块的 key 值
+    - l: 是否已经记录的 flag
+    - exports: 从该模块导出的方法
+
+  - installedChunks: 用来记录每个包的是否加载的信息(文件中模块的集合体)
+
+    - 0: 已经加载
+
+  - installedChunkData: 0; [resolve, reject, promise];undefined
+
+  - \_\_webpack_require\_\_方法(webpack 的 require 方法)
+
+    - ![](./img/选区_071.png)
+
+  - 1 -> 该模块已经被加载就直接导出他的 exports
+
+    - 2 -> 更新 installedModules, 并执行 modules 的函数(更新 module 的 exports), 之后导出 module.exports
+
+    * **总结**: 这个方法主要是导出某个 js 文件中的方法，将其 exports 导出, 如果没有被导出过就需要重新在全局中注册, 如果注册过直接导出 exports 即可
+
+  - \_\_webpack_require\_\_e 方法
+
+    - ![](./img/选区_072.png)
+
+    - promise: 异步导入文件结果
+
+    - installedChunkData: 缓存结果,
+
+    - 1 -> 0 为已经添加到 module 模块，但是还没有被加载完; 加载完毕将 installChunkData[chunkId]的值改为响应的 promise 而不是 0,installedChunckData[2]为一个加载的 promise
+
+    - 2 -> 将 installedChunkData 设置对应模块 Promise[resolve, reject, promise]
+
+    - 3 -> 添加一个 script 标签将对应用到的 module 引入到页面中
+
+      - 确定 src 加载函数 jsonpScriptSrc
+
+      ![](./img/选区_073.png)
+
+      - onScriptComplete 函数: 用于判断 script 标签加载完毕的回调函数
+
+      ![](./img/选区_074.png)
+
+    - 4 -> 添加 script 标签页面中
+
+    - 5 -> 返回加载模块结果(一个 chunk.js)
+
+    - **总结：**该函数主要做的事：根据 chunkId 进行加载，如果已经加载就不需要重新加载;如果没有加载过且处于加载过程中返回 promise;如果没有被加载过, 也不在加载过程中，创建一个 promise, 并组成一个 resolve, reject, promise 数组, 最后返回 promise
+
+  - 自执行代码分析
+
+    - ![](./img/选区_076.png)
+
+      **主要功能**: 从全局的 webpackJsonp 中拿到了加载模块的列表，重写了 jsonArray 的 push 方法且将 jsonArray 内的模块进行懒加载
+
+      **入参**: data[0]: chunkIds, data[1]: chunks 包含的 module
+
+      ![](./img/选区_077.png)
+
+    - 重写的 push 方法 webpackJsonpCallback![](./img/选区_075.png)
+
+      - 代码思路：先根据 chunkId 在 installedChunks 判断现在模块加载进度(已加载(installedChunks[chunkId]=0)， 加载中(installedChunks[chunkId]=[resolve, reject, promise])，未加载(installedChunks[chunkId]=undefined)), 如果是加载中的情况下将其 resolve 放到 resolveList 中，之后将 installedChunks[chunkId]置 0，表示其为加载完毕状态，并在全局的 modules 中注册已经加载的 modules, 最后出队依次执行 resolve 方法即可，因为执行了 resolve 方法才会执行代码中.then 里面的代码, 注意在加载 chunks 时候的那个 push 是全局的 push 所以是 webpackJsonpCallback 方法！！！
+
+> 引用：
+>
+> 调用\_\_webpack_require\_\_.e('printjs')方法，实际只是将对应的 print.bundle.js 文件加载和创建了一个异步的 promise（因为并不知道什么时候这个文件才能执行完，因此需要一个异步 promise，而 promise 的 resolve 会在对应的文件加载时执行，这样就能实现异步文件加载了），并没有将懒加载文件中保存的模块代码执行。
+>
+> 在加载对应 print.bundle.js 文件代码时，通过调用 webpackJsonpCallback 函数，实现触发加载文件时创建的 promise 的 resolve。
+>
+> resolve 触发后，会执行 promise 的 then 回调，这个回调通过**webpack_require**函数执行了真正需要模块的代码（注意：如果 print.bundle.js 中有很多模块，只会执行用到的模块代码，而不是执行所有模块的代码），执行完后将模块的 exports 返回给 promise 的下一个 then 函数，该函数也就是真正的业务代码了。
