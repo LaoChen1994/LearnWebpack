@@ -198,9 +198,13 @@ module.exports = {
 
 ![](./img/选区_049.png)
 
+---
+
 #### 3. Source Map Webpack 配置
 
 ![](./img/选区_050.png)
+
+---
 
 #### 4. webpack server 和 watch
 
@@ -222,7 +226,7 @@ webpack --watch
 
 **(2) webpack-dev-server**
 
-​ [webpack-dev-server 配置](https://www.webpackjs.com/configuration/dev-server/)
+ [webpack-dev-server 配置](https://www.webpackjs.com/configuration/dev-server/)
 
 ```bash
 # 添加webServer
@@ -261,6 +265,8 @@ app.listen(3000, function() {
 - webpack-dev-middleware 的输出文件存在内存中， publicPath 要和 config 中的 publicPath 一致，不然会找不到打包后的 bundle 文件
 
 [webpack-dev-middleware 配置](<[https://www.webpackjs.com/guides/development/#%E4%BD%BF%E7%94%A8-webpack-dev-middleware](https://www.webpackjs.com/guides/development/#使用-webpack-dev-middleware)>) 还有很多坑,后序填
+
+---
 
 #### 5. 模块热替换
 
@@ -340,6 +346,155 @@ server.listen(5000, 'localhost', () => {
 
 ---
 
-### 6. Tree Shaking
+### 6. 构建生产环境
 
-- tree shaking: 用于移除上下文中没有引用的代码
+#### 0. 几个概念
+
++ tree shaking: 将代码中无引用的代码不进行打包
++ 开发环境: 开发环境中需要实时加载，HMR等高性能模块，但是在生产环境中我们更需要更小的bundle,更优化的资源以及改善加载时间.
+
+#### 1. 环境配置
+
+~~~bash
+npm install webpack-merge -S
+~~~
+
+#### 2. webpack生产环境拆分
+
++ webpack.common.js: 在生产环境和开发环境公共的webpack配置
+
+~~~javascript
+const path = require('path');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+
+module.exports = {
+  entry: {
+    app: './src/index.js'
+  },
+  output: {
+    filename: '[name].bundle.js',
+    path: path.resolve(__dirname, 'dist')
+  },
+  plugins: [
+    new HtmlWebpackPlugin({
+      title: 'Production'
+    }),
+    new CleanWebpackPlugin()
+  ]
+};
+~~~
+
++ webpack.dev.js: 开发环境用的单一的server配置文件
+
+~~~javascript
+const merge = require('webpack-merge');
+// 用于js代码的压缩
+const common = require('./webpack.common.js');
+
+module.exports = merge(common, {
+  devtool: 'inline-source-map',
+  devServer: {
+    contentBase: './dist'
+  }
+});
+~~~
+
++ webpack.prod.js: 生产环境下的用于代码压缩的webpack配置
+
+~~~javascript
+const merge = require('webpack-merge');
+const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
+const common = require('./webpack.common.js');
+
+module.exports = merge(common, {
+  plugins: [new UglifyJSPlugin()]
+});
+~~~
+
+---
+
+### 7. 代码分离(打包)
+
++ 入口起点(entry手动分离)
++ 使用CommonsChunkPlugin插件去重分离
++ 动态导入，通过模块的内联函数来分离代码
+
+##### 1. entry 手动分离
+
+之前有记录过, 通过手动在entry中设置多个入口文件，然后分别构建依赖图，之后再分别打包
+
++ 优点：简单直观
++ 缺点: 如果多个bundle之间有重复的模块, 会重复被打包;方法不够灵活，不能按照逻辑进行拆分
++ 实验过程
+
+![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_059.png)
+
++ 打包结果
+
+![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_060.png)
+
+#### 2. 使用CommonChunkPlugin
+
+> webpack.optimize.CommonsChunkPlugin已经被webpack.config.js中的optimization.splitChunks替代了，现在需要通过该设置来自动进行打包分离
+
++ index.js
+
+~~~javascript
+import _ from 'lodash';
+
+var elem = document.createElement('div');
+
+elem.innerText = _.join(['first', 'webpack'], ' ');
+
+document.body.appendChild(elem);
+~~~
+
++ another.js
+
+~~~javascript
+import _ from 'lodash';
+
+console.log(_.join(['1', '2', '3'], '-'));
+~~~
+
+**这里两个文件都添加了lodash, 如果使用方法一进行添加, 则lodash会被打包两次，浪费性能，使用splitChunks可以优化打包方法**
+
++ webpack.config.js配置
+
+~~~javascript
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const webpack = require('webpack');
+
+module.exports = {
+  entry: {
+    index: './src/index.js',
+    another: './src/another.js'
+  },
+  output: {
+    filename: '[name].[hash].bundle.js',
+    path: path.resolve(__dirname, 'dist')
+  },
+  plugins: [new HtmlWebpackPlugin()],
+  optimization: {
+    // splitChunks  
+    splitChunks: {
+      // 配置任何文件都进行优化
+      chunks: 'all'
+    }
+  }
+};
+~~~
+
+[optimization.splitChunks配置手册](https://webpack.docschina.org/configuration/optimization/#optimization-splitchunks)
+
++ 打包结果
+
+![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_061.png)
+
+![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_062.png)
+
+![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_063.png)
+
+![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_064.png)
