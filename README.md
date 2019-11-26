@@ -226,7 +226,7 @@ webpack --watch
 
 **(2) webpack-dev-server**
 
- [webpack-dev-server 配置](https://www.webpackjs.com/configuration/dev-server/)
+[webpack-dev-server 配置](https://www.webpackjs.com/configuration/dev-server/)
 
 ```bash
 # 添加webServer
@@ -350,20 +350,20 @@ server.listen(5000, 'localhost', () => {
 
 #### 0. 几个概念
 
-+ tree shaking: 将代码中无引用的代码不进行打包
-+ 开发环境: 开发环境中需要实时加载，HMR等高性能模块，但是在生产环境中我们更需要更小的bundle,更优化的资源以及改善加载时间.
+- tree shaking: 将代码中无引用的代码不进行打包
+- 开发环境: 开发环境中需要实时加载，HMR 等高性能模块，但是在生产环境中我们更需要更小的 bundle,更优化的资源以及改善加载时间.
 
 #### 1. 环境配置
 
-~~~bash
+```bash
 npm install webpack-merge -S
-~~~
+```
 
-#### 2. webpack生产环境拆分
+#### 2. webpack 生产环境拆分
 
-+ webpack.common.js: 在生产环境和开发环境公共的webpack配置
+- webpack.common.js: 在生产环境和开发环境公共的 webpack 配置
 
-~~~javascript
+```javascript
 const path = require('path');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
@@ -383,11 +383,11 @@ module.exports = {
     new CleanWebpackPlugin()
   ]
 };
-~~~
+```
 
-+ webpack.dev.js: 开发环境用的单一的server配置文件
+- webpack.dev.js: 开发环境用的单一的 server 配置文件
 
-~~~javascript
+```javascript
 const merge = require('webpack-merge');
 // 用于js代码的压缩
 const common = require('./webpack.common.js');
@@ -398,11 +398,11 @@ module.exports = merge(common, {
     contentBase: './dist'
   }
 });
-~~~
+```
 
-+ webpack.prod.js: 生产环境下的用于代码压缩的webpack配置
+- webpack.prod.js: 生产环境下的用于代码压缩的 webpack 配置
 
-~~~javascript
+```javascript
 const merge = require('webpack-merge');
 const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 const common = require('./webpack.common.js');
@@ -410,37 +410,21 @@ const common = require('./webpack.common.js');
 module.exports = merge(common, {
   plugins: [new UglifyJSPlugin()]
 });
-~~~
+```
 
 ---
 
 ### 7. 代码分离(打包)
 
-+ 入口起点(entry手动分离)
-+ 使用CommonsChunkPlugin插件去重分离
-+ 动态导入，通过模块的内联函数来分离代码
+- 入口起点(entry 手动分离)
+- 使用 CommonsChunkPlugin 插件去重分离
+- 动态导入，通过模块的内联函数来分离代码
 
-##### 1. entry 手动分离
+#### 0. 实验准备
 
-之前有记录过, 通过手动在entry中设置多个入口文件，然后分别构建依赖图，之后再分别打包
+- index.js
 
-+ 优点：简单直观
-+ 缺点: 如果多个bundle之间有重复的模块, 会重复被打包;方法不够灵活，不能按照逻辑进行拆分
-+ 实验过程
-
-![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_059.png)
-
-+ 打包结果
-
-![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_060.png)
-
-#### 2. 使用CommonChunkPlugin
-
-> webpack.optimize.CommonsChunkPlugin已经被webpack.config.js中的optimization.splitChunks替代了，现在需要通过该设置来自动进行打包分离
-
-+ index.js
-
-~~~javascript
+```javascript
 import _ from 'lodash';
 
 var elem = document.createElement('div');
@@ -448,21 +432,41 @@ var elem = document.createElement('div');
 elem.innerText = _.join(['first', 'webpack'], ' ');
 
 document.body.appendChild(elem);
-~~~
+```
 
-+ another.js
+- another.js
 
-~~~javascript
+```javascript
 import _ from 'lodash';
 
 console.log(_.join(['1', '2', '3'], '-'));
-~~~
+```
 
-**这里两个文件都添加了lodash, 如果使用方法一进行添加, 则lodash会被打包两次，浪费性能，使用splitChunks可以优化打包方法**
+**这里两个文件都添加了 lodash, 如果使用手动分离的方法, 则 lodash 会被打包两次，浪费性能，使用 splitChunks 可以优化打包方法**
 
-+ webpack.config.js配置
+##### 1. entry 手动分离
 
-~~~javascript
+之前有记录过, 通过手动在 entry 中设置多个入口文件，然后分别构建依赖图，之后再分别打包
+
+- 优点：简单直观
+- 缺点: 如果多个 bundle 之间有重复的模块, 会重复被打包;方法不够灵活，不能按照逻辑进行拆分
+- 实验过程
+
+![](./img/选区_059.png)
+
+- 打包结果
+
+![](./img/选区_060.png)
+
+**这里两个包的打包大小均有 70kb 以上，因为 lodash 本身的包大小就有 70k**
+
+#### 2. 使用 CommonChunkPlugin
+
+> webpack.optimize.CommonsChunkPlugin 已经被 webpack.config.js 中的 optimization.splitChunks 替代了，现在需要通过该设置来自动进行打包分离
+
+- webpack.config.js 配置
+
+```javascript
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const webpack = require('webpack');
@@ -478,23 +482,104 @@ module.exports = {
   },
   plugins: [new HtmlWebpackPlugin()],
   optimization: {
-    // splitChunks  
+    // splitChunks
     splitChunks: {
-      // 配置任何文件都进行优化
+      // 配置对任何文件都采取分离
       chunks: 'all'
     }
   }
 };
-~~~
+```
 
-[optimization.splitChunks配置手册](https://webpack.docschina.org/configuration/optimization/#optimization-splitchunks)
+[optimization.splitChunks 配置手册](https://webpack.docschina.org/configuration/optimization/#optimization-splitchunks)
 
-+ 打包结果
+- 打包结果
 
-![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_061.png)
+![](./img/选区_061.png)
 
-![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_062.png)
+**每个单独的文件打包后只有 2kb 以下，另外公共的包中有 70kb(lodash),　使打包结果更小**
 
-![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_063.png)
+![](./img/选区_062.png)
 
-![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_064.png)
+![](./img/选区_063.png)
+
+![](./img/选区_064.png)
+
+#### 3. 动态打包
+
+> 动态打包用到了 import().then()新特性
+
+- webpack.config.js 配置文件
+
+```javascript
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+
+module.exports = {
+  entry: {
+    index: './src/index.js',
+    another: './src/another.js'
+  },
+  output: {
+    filename: '[name].[hash].bundle.js',
+    path: path.resolve(__dirname, 'dist'),
+    // 这个chunkFilename是打包响应文件给定的Chunkname
+    chunkFilename: '[name].bundle.js'
+  },
+  plugins: [new HtmlWebpackPlugin()]
+};
+```
+
+- 动态导入的 index.js
+
+![](./img/选区_065.png)
+
+- 动态导入的 another.js
+
+![](./img/选区_066.png)
+
+- 打包结果探查
+
+![](./img/选区_067.png)
+
+#### 4. 存在问题
+
+> 打包名称的顺序问题
+>
+> 猜测：当打包文件已经存在于 index.js 时候, 则不更换其名称，直接引用即可
+>
+> ​ -> 文件已经有被打包过则直接引用，不生成新名称的打包文件
+
+- 加入 Math.js 进行探查
+
+```javascript
+// another.js
+const getComponent = async () => {
+  const node = document.createElement('div');
+  const _ = await import(/* webpackChunkName: 'anotherLodash' */ 'lodash');
+  const math = await import(/* webpackChunkName: 'anotherMathjs' */ 'mathjs');
+  node.innerHTML = _.join(
+    ['Component', 'dynamic', 'import', math.sqrt(9).toString()],
+    ' '
+  );
+  return node;
+};
+
+// third.js
+const getComponent = async () => {
+  const math = await import(/* webpackChunkName: 'thirdMath' */ 'mathjs');
+  const elem = document.createElement('div');
+  elem.innerHTML = math.sqrt(4);
+  return elem;
+};
+
+getComponent().then(node => document.body.appendChild(node));
+```
+
+- 打包结果探查
+
+![](./img/选区_068.png)
+
+- 结果
+
+**当多个包且 chunkName 设置不同时, 此时 chunkName 为第一个打得包的 chunkName**
