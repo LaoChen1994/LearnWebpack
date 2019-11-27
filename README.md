@@ -444,7 +444,7 @@ console.log(_.join(['1', '2', '3'], '-'));
 
 **这里两个文件都添加了 lodash, 如果使用手动分离的方法, 则 lodash 会被打包两次，浪费性能，使用 splitChunks 可以优化打包方法**
 
-##### 1. entry 手动分离
+#### 1. entry 手动分离
 
 之前有记录过, 通过手动在 entry 中设置多个入口文件，然后分别构建依赖图，之后再分别打包
 
@@ -707,3 +707,174 @@ document.body.appendChild(elem);
 > 在加载对应 print.bundle.js 文件代码时，通过调用 webpackJsonpCallback 函数，实现触发加载文件时创建的 promise 的 resolve。
 >
 > resolve 触发后，会执行 promise 的 then 回调，这个回调通过**webpack_require**函数执行了真正需要模块的代码（注意：如果 print.bundle.js 中有很多模块，只会执行用到的模块代码，而不是执行所有模块的代码），执行完后将模块的 exports 返回给 promise 的下一个 then 函数，该函数也就是真正的业务代码了。
+
+---
+
+### 9. 缓存
+
+    #### 0. 缓存机制
+
+为了使网站加载速度更快，通常浏览器使用缓存的方法来提升性能，通过资源名进行缓存命中，命中缓存来降低网络流量。如果在新版本部署中没有更改资源名，则浏览器会误以为是同一资源，加载缓存版本,这样新版本就没有成功部署。因此通过 webpack 配置缓存需要做到两点: 1. 能够被浏览器缓存;2. 在文件内容更新后能够请求到新文件。
+
+#### 1. 几个概念
+
+| hash 类型 | 获取 hash 方法                                                                      | 优点                                         | 缺点                                                                                        |
+| --------- | ----------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| hash      | 整个项目版本更新的 hash 值 (项目的 hash 值)                                         | -                                            | 更新之后重置整个项目的 hash 达不到浏览器缓存的目的                                          |
+| chunkhash | 根据不同的入口文件进行依赖文件解析，构建成相同的 chunk (从一个入口进入的所有依赖图) | 能够对某一个入口的文件进行重新命名有利于缓存 | 该入口内的所有依赖都会更改其 chunkname(包括一些没有更新的部分)                              |
+| css 分离  | 对 css 文件而言如果 css 不发生改变当引用文件发生改变时不会被重新编译                | 便于 sourceMap, css 单独请求，并行请求       | 需要导入 extract-text-webpack-plugin, 在 webpackV4 中使用 mini-css-extract-plugin, 没有 HMR |
+
+#### 2. 实验准备
+
+    + index.js (入口一 )
+
+```javascript
+import _ from 'lodash';
+import { getComponent } from './getComponent';
+
+var elem = document.createElement('div');
+
+elem.innerText = _.join(['first', 'webpack'], ' ');
+
+const comp = getComponent();
+
+document.body.appendChild(elem);
+document.body.appendChild(comp);
+```
+
+- another.js(入口２)
+
+```javascript
+import './style.css';
+
+const node = document.createElement('div');
+node.innerText = 'another';
+node.classList.add('text');
+document.body.appendChild(node);
+```
+
+- getComponent.js
+
+```javascript
+import './style.css';
+
+export const getComponent = () => {
+  const node = document.createElement('div');
+  node.classList.add('text');
+  node.innerHTML = 'text';
+  return node;
+};
+```
+
+- webpack.config.js
+
+```javascript
+const path = require('path');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+
+module.exports = {
+  entry: {
+    index: './src/index.js',
+    another: './src/another.js'
+  },
+  output: {
+    // 配置filename带上hash
+    filename: '[name].[hash].bundle.js',
+    path: path.resolve(__dirname, 'dist')
+  },
+  mode: 'development',
+  plugins: [
+    new CleanWebpackPlugin(),
+    new HtmlWebpackPlugin({
+      title: 'Cache'
+    })
+  ],
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader']
+      }
+    ]
+  }
+};
+```
+
+#### 3. 实验验证
+
+##### 1. hash 结果
+
+- 第一次打包结果
+
+![](./img/选区_078.png)
+
+- 更改 index.js 而不更改 another.js
+
+![](./img/选区_079.png)
+
+##### 2. chunkhash
+
+```javascript
+// 更改webpack.config.js中的filename
+  output: {
+    filename: '[name].[chunkhash].bundle.js',
+    path: path.resolve(__dirname, 'dist')
+  },
+```
+
+- 第一次打包结果
+
+![](./img/选区_080.png)
+
+- 更改 another.js
+
+![](./img/选区_081.png)
+
+- 改动 style.css(两者文件均调用的公共文件)
+
+![](./img/选区_082.png)
+
+##### 3. css 从 js 中分离
+
+    + webpack.config.js
+
+```javascript
+const path = require('path');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const miniCssPlugin = require('mini-css-extract-plugin');
+
+module.exports = {
+  entry: {
+    index: './src/index.js',
+    another: './src/another.js'
+  },
+  output: {
+    filename: '[name].[chunkhash].bundle.js',
+    path: path.resolve(__dirname, 'dist')
+  },
+  mode: 'development',
+  plugins: [
+    new CleanWebpackPlugin(),
+    new HtmlWebpackPlugin({
+      title: 'Cache'
+    }),
+    new miniCssPlugin({
+      // 打包得到的css包名
+      filename: '[name].[hash].css',
+      // 在运行过程中的chunk的包名
+      chunkFilename: '[name].[hash].css'
+    })
+  ],
+  module: {
+    rules: [
+      {
+        test: /\.(sc|sa|c)ss$/,
+        // 用miniCssPlugin.loader 代替 style-loader
+        use: [miniCssPlugin.loader, 'css-loader', 'sass-loader']
+      }
+    ]
+  }
+};
+```
