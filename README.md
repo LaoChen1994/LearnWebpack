@@ -230,7 +230,7 @@ webpack --watch
 
 ```bash
 # 添加webServer
-yarn add webpack-dev-server --open
+yarn add webpack-dev-server
 
 # 启动webpack-server
 webpack-dev-server --config webpack.config.js --open
@@ -712,23 +712,23 @@ document.body.appendChild(elem);
 
 ### 9. 缓存
 
-    #### 0. 缓存机制
+	#### 0. 缓存机制
 
-为了使网站加载速度更快，通常浏览器使用缓存的方法来提升性能，通过资源名进行缓存命中，命中缓存来降低网络流量。如果在新版本部署中没有更改资源名，则浏览器会误以为是同一资源，加载缓存版本,这样新版本就没有成功部署。因此通过 webpack 配置缓存需要做到两点: 1. 能够被浏览器缓存;2. 在文件内容更新后能够请求到新文件。
+为了使网站加载速度更快，通常浏览器使用缓存的方法来提升性能，通过资源名进行缓存命中，命中缓存来降低网络流量。如果在新版本部署中没有更改资源名，则浏览器会误以为是同一资源，加载缓存版本,这样新版本就没有成功部署。因此通过webpack配置缓存需要做到两点: 1. 能够被浏览器缓存;2. 在文件内容更新后能够请求到新文件。
 
 #### 1. 几个概念
 
-| hash 类型 | 获取 hash 方法                                                                      | 优点                                         | 缺点                                                                                        |
-| --------- | ----------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| hash      | 整个项目版本更新的 hash 值 (项目的 hash 值)                                         | -                                            | 更新之后重置整个项目的 hash 达不到浏览器缓存的目的                                          |
-| chunkhash | 根据不同的入口文件进行依赖文件解析，构建成相同的 chunk (从一个入口进入的所有依赖图) | 能够对某一个入口的文件进行重新命名有利于缓存 | 该入口内的所有依赖都会更改其 chunkname(包括一些没有更新的部分)                              |
-| css 分离  | 对 css 文件而言如果 css 不发生改变当引用文件发生改变时不会被重新编译                | 便于 sourceMap, css 单独请求，并行请求       | 需要导入 extract-text-webpack-plugin, 在 webpackV4 中使用 mini-css-extract-plugin, 没有 HMR |
+| hash类型  | 获取hash方法                                                 | 优点                                         | 缺点                                                         |
+| --------- | ------------------------------------------------------------ | -------------------------------------------- | ------------------------------------------------------------ |
+| hash      | 整个项目版本更新的hash值 (项目的hash值)                      | -                                            | 更新之后重置整个项目的hash达不到浏览器缓存的目的             |
+| chunkhash | 根据不同的入口文件进行依赖文件解析，构建成相同的chunk (从一个入口进入的所有依赖图) | 能够对某一个入口的文件进行重新命名有利于缓存 | 该入口内的所有依赖都会更改其chunkname(包括一些没有更新的部分) |
+| css分离   | 对css文件而言如果css不发生改变当引用文件发生改变时不会被重新编译 | 便于sourceMap, css单独请求，并行请求         | 需要导入extract-text-webpack-plugin, 在webpackV4中使用mini-css-extract-plugin, 没有HMR |
 
 #### 2. 实验准备
 
-    + index.js (入口一 )
+	+ index.js (入口一 )
 
-```javascript
+~~~javascript
 import _ from 'lodash';
 import { getComponent } from './getComponent';
 
@@ -740,22 +740,22 @@ const comp = getComponent();
 
 document.body.appendChild(elem);
 document.body.appendChild(comp);
-```
+~~~
 
-- another.js(入口２)
++ another.js(入口２)
 
-```javascript
+~~~javascript
 import './style.css';
 
 const node = document.createElement('div');
 node.innerText = 'another';
 node.classList.add('text');
 document.body.appendChild(node);
-```
+~~~
 
-- getComponent.js
++ getComponent.js
 
-```javascript
+~~~javascript
 import './style.css';
 
 export const getComponent = () => {
@@ -764,11 +764,11 @@ export const getComponent = () => {
   node.innerHTML = 'text';
   return node;
 };
-```
+~~~
 
-- webpack.config.js
++ webpack.config.js
 
-```javascript
+~~~javascript
 const path = require('path');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
@@ -779,7 +779,7 @@ module.exports = {
     another: './src/another.js'
   },
   output: {
-    // 配置filename带上hash
+	// 配置filename带上hash
     filename: '[name].[hash].bundle.js',
     path: path.resolve(__dirname, 'dist')
   },
@@ -799,47 +799,47 @@ module.exports = {
     ]
   }
 };
-```
+~~~
 
 #### 3. 实验验证
 
-##### 1. hash 结果
+##### 1. hash结果 
 
-- 第一次打包结果
++ 第一次打包结果
 
-![](./img/选区_078.png)
+![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_078.png)
 
-- 更改 index.js 而不更改 another.js
++ 更改index.js而不更改another.js
 
-![](./img/选区_079.png)
+![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_079.png)
 
 ##### 2. chunkhash
 
-```javascript
+~~~javascript
 // 更改webpack.config.js中的filename
   output: {
     filename: '[name].[chunkhash].bundle.js',
     path: path.resolve(__dirname, 'dist')
   },
-```
+~~~
 
-- 第一次打包结果
++ 第一次打包结果
 
-![](./img/选区_080.png)
+![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_080.png)
 
-- 更改 another.js
++ 更改another.js
 
-![](./img/选区_081.png)
+![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_081.png)
 
-- 改动 style.css(两者文件均调用的公共文件)
++ 改动style.css(两者文件均调用的公共文件)
 
-![](./img/选区_082.png)
+![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_082.png)
 
-##### 3. css 从 js 中分离
+##### 3. css从js中分离
 
-    + webpack.config.js
+	+ webpack.config.js
 
-```javascript
+~~~javascript
 const path = require('path');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
@@ -877,4 +877,56 @@ module.exports = {
     ]
   }
 };
-```
+~~~
+
++ 打包结果
+
+![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_085.png)
+
+---
+
+### 10. Library 构建
+
+#### 1. 打包目标
+
++ 设置指定包名（配置webpack.config.js中的filename即可）
++ 不打包lodash, 使用外部的lodash
++ 能够以库的形式被调用
+
+#### 2. 外部化lodash
+
+> 外部化lodash的意思是，包内不含有lodash, 而是默认当作peerDependency，用户已经将该lodash安装好，因此可以将是否需要安装library这个权利交给用户
+
+**配置方法externals:**
+
+![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_086.png)
+
++ commonjs: 该包支持Commonjs
+
++ commonjs2: 该报的export为module.exports.default
+
++ root: 运行环境内应由一个为名为_的lodash全局变量
+
++ amd: AMD模块系统
+
+  [webpack externals深入理解](https://segmentfault.com/a/1190000012113011)
+
+这里配置externals的目的是除了root情况下外，我们调用 import _ from lodash这条语句时，转化为CMD,AMD对应的加载语句，而使这句不报错
+
+#### 3. Library的暴露
+
+![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_087.png)
+
++ library: 暴露导出库的全局变量名
++ libraryTarget: 导出方式
+  + var: 允许通过script标签导入
+  + this: 通过this对象
+  + window: 通过注册到全局变量中
+  + umd: 允许以AMD或CMD, 一般导出包都是以这种形式
+
+#### 4. 将bundle路径添加到package.json
+
+![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_088.png)
+
+#### 5. npm包发布
+

@@ -8,5 +8,9 @@ module.exports = {
     path: path.resolve(__dirname, 'dist')
   },
   plugins: [new HtmlWebpackPlugin()],
-  mode: 'development'
+  mode: 'development',
+  devServer: {
+    contentBase: './dist',
+    hot: true
+  }
 };
