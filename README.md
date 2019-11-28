@@ -712,23 +712,23 @@ document.body.appendChild(elem);
 
 ### 9. 缓存
 
-	#### 0. 缓存机制
+    #### 0. 缓存机制
 
-为了使网站加载速度更快，通常浏览器使用缓存的方法来提升性能，通过资源名进行缓存命中，命中缓存来降低网络流量。如果在新版本部署中没有更改资源名，则浏览器会误以为是同一资源，加载缓存版本,这样新版本就没有成功部署。因此通过webpack配置缓存需要做到两点: 1. 能够被浏览器缓存;2. 在文件内容更新后能够请求到新文件。
+为了使网站加载速度更快，通常浏览器使用缓存的方法来提升性能，通过资源名进行缓存命中，命中缓存来降低网络流量。如果在新版本部署中没有更改资源名，则浏览器会误以为是同一资源，加载缓存版本,这样新版本就没有成功部署。因此通过 webpack 配置缓存需要做到两点: 1. 能够被浏览器缓存;2. 在文件内容更新后能够请求到新文件。
 
 #### 1. 几个概念
 
-| hash类型  | 获取hash方法                                                 | 优点                                         | 缺点                                                         |
-| --------- | ------------------------------------------------------------ | -------------------------------------------- | ------------------------------------------------------------ |
-| hash      | 整个项目版本更新的hash值 (项目的hash值)                      | -                                            | 更新之后重置整个项目的hash达不到浏览器缓存的目的             |
-| chunkhash | 根据不同的入口文件进行依赖文件解析，构建成相同的chunk (从一个入口进入的所有依赖图) | 能够对某一个入口的文件进行重新命名有利于缓存 | 该入口内的所有依赖都会更改其chunkname(包括一些没有更新的部分) |
-| css分离   | 对css文件而言如果css不发生改变当引用文件发生改变时不会被重新编译 | 便于sourceMap, css单独请求，并行请求         | 需要导入extract-text-webpack-plugin, 在webpackV4中使用mini-css-extract-plugin, 没有HMR |
+| hash 类型 | 获取 hash 方法                                                                      | 优点                                         | 缺点                                                                                        |
+| --------- | ----------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| hash      | 整个项目版本更新的 hash 值 (项目的 hash 值)                                         | -                                            | 更新之后重置整个项目的 hash 达不到浏览器缓存的目的                                          |
+| chunkhash | 根据不同的入口文件进行依赖文件解析，构建成相同的 chunk (从一个入口进入的所有依赖图) | 能够对某一个入口的文件进行重新命名有利于缓存 | 该入口内的所有依赖都会更改其 chunkname(包括一些没有更新的部分)                              |
+| css 分离  | 对 css 文件而言如果 css 不发生改变当引用文件发生改变时不会被重新编译                | 便于 sourceMap, css 单独请求，并行请求       | 需要导入 extract-text-webpack-plugin, 在 webpackV4 中使用 mini-css-extract-plugin, 没有 HMR |
 
 #### 2. 实验准备
 
-	+ index.js (入口一 )
+    + index.js (入口一 )
 
-~~~javascript
+```javascript
 import _ from 'lodash';
 import { getComponent } from './getComponent';
 
@@ -740,22 +740,22 @@ const comp = getComponent();
 
 document.body.appendChild(elem);
 document.body.appendChild(comp);
-~~~
+```
 
-+ another.js(入口２)
+- another.js(入口２)
 
-~~~javascript
+```javascript
 import './style.css';
 
 const node = document.createElement('div');
 node.innerText = 'another';
 node.classList.add('text');
 document.body.appendChild(node);
-~~~
+```
 
-+ getComponent.js
+- getComponent.js
 
-~~~javascript
+```javascript
 import './style.css';
 
 export const getComponent = () => {
@@ -764,11 +764,11 @@ export const getComponent = () => {
   node.innerHTML = 'text';
   return node;
 };
-~~~
+```
 
-+ webpack.config.js
+- webpack.config.js
 
-~~~javascript
+```javascript
 const path = require('path');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
@@ -779,7 +779,7 @@ module.exports = {
     another: './src/another.js'
   },
   output: {
-	// 配置filename带上hash
+    // 配置filename带上hash
     filename: '[name].[hash].bundle.js',
     path: path.resolve(__dirname, 'dist')
   },
@@ -799,47 +799,47 @@ module.exports = {
     ]
   }
 };
-~~~
+```
 
 #### 3. 实验验证
 
-##### 1. hash结果 
+##### 1. hash 结果
 
-+ 第一次打包结果
+- 第一次打包结果
 
-![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_078.png)
+![](./img/选区_078.png)
 
-+ 更改index.js而不更改another.js
+- 更改 index.js 而不更改 another.js
 
-![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_079.png)
+![](./img/选区_079.png)
 
 ##### 2. chunkhash
 
-~~~javascript
+```javascript
 // 更改webpack.config.js中的filename
   output: {
     filename: '[name].[chunkhash].bundle.js',
     path: path.resolve(__dirname, 'dist')
   },
-~~~
+```
 
-+ 第一次打包结果
+- 第一次打包结果
 
-![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_080.png)
+![](./img/选区_080.png)
 
-+ 更改another.js
+- 更改 another.js
 
-![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_081.png)
+![](./img/选区_081.png)
 
-+ 改动style.css(两者文件均调用的公共文件)
+- 改动 style.css(两者文件均调用的公共文件)
 
-![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_082.png)
+![](./img/选区_082.png)
 
-##### 3. css从js中分离
+##### 3. css 从 js 中分离
 
-	+ webpack.config.js
+    + webpack.config.js
 
-~~~javascript
+```javascript
 const path = require('path');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
@@ -877,11 +877,11 @@ module.exports = {
     ]
   }
 };
-~~~
+```
 
-+ 打包结果
+- 打包结果
 
-![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_085.png)
+![](./img/选区_085.png)
 
 ---
 
@@ -889,44 +889,237 @@ module.exports = {
 
 #### 1. 打包目标
 
-+ 设置指定包名（配置webpack.config.js中的filename即可）
-+ 不打包lodash, 使用外部的lodash
-+ 能够以库的形式被调用
+- 设置指定包名（配置 webpack.config.js 中的 filename 即可）
+- 不打包 lodash, 使用外部的 lodash
+- 能够以库的形式被调用
 
-#### 2. 外部化lodash
+#### 2. 外部化 lodash
 
-> 外部化lodash的意思是，包内不含有lodash, 而是默认当作peerDependency，用户已经将该lodash安装好，因此可以将是否需要安装library这个权利交给用户
+> 外部化 lodash 的意思是，包内不含有 lodash, 而是默认当作 peerDependency，用户已经将该 lodash 安装好，因此可以将是否需要安装 library 这个权利交给用户
 
-**配置方法externals:**
+**配置方法 externals:**
 
-![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_086.png)
+![](./img/选区_086.png)
 
-+ commonjs: 该包支持Commonjs
+- commonjs: 该包支持 Commonjs
 
-+ commonjs2: 该报的export为module.exports.default
+- commonjs2: 该报的 export 为 module.exports.default
 
-+ root: 运行环境内应由一个为名为_的lodash全局变量
+- root: 运行环境内应由一个为名为\_的 lodash 全局变量
 
-+ amd: AMD模块系统
+- amd: AMD 模块系统
 
-  [webpack externals深入理解](https://segmentfault.com/a/1190000012113011)
+  [webpack externals 深入理解](https://segmentfault.com/a/1190000012113011)
 
-这里配置externals的目的是除了root情况下外，我们调用 import _ from lodash这条语句时，转化为CMD,AMD对应的加载语句，而使这句不报错
+这里配置 externals 的目的是除了 root 情况下外，我们调用 import \_ from lodash 这条语句时，转化为 CMD,AMD 对应的加载语句，而使这句不报错
 
-#### 3. Library的暴露
+#### 3. Library 的暴露
 
-![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_087.png)
+![](./img/选区_087.png)
 
-+ library: 暴露导出库的全局变量名
-+ libraryTarget: 导出方式
-  + var: 允许通过script标签导入
-  + this: 通过this对象
-  + window: 通过注册到全局变量中
-  + umd: 允许以AMD或CMD, 一般导出包都是以这种形式
+- library: 暴露导出库的全局变量名
+- libraryTarget: 导出方式
+  - var: 允许通过 script 标签导入
+  - this: 通过 this 对象
+  - window: 通过注册到全局变量中
+  - umd: 允许以 AMD 或 CMD, 一般导出包都是以这种形式
 
-#### 4. 将bundle路径添加到package.json
+#### 4. 将 bundle 路径添加到 package.json
 
-![](/home/cyx/Desktop/Learning/webpackLearn/img/选区_088.png)
+![](./img/选区_088.png)
 
-#### 5. npm包发布
+#### 5. npm 包发布流程例子
 
+- 编写基础的模块代码
+- 注册 npm 帐号(有的话直接进入下一步)
+- 配置 webpack
+- 配置 package.json
+- 优化(ReadMe+单元测试)
+- 发布
+
+##### 1. 编写一个简单的 Math 库
+
+- math.js
+
+```javascript
+// math.js
+const square = x => x ** 2;
+const cube = x => x ** 3;
+
+export const MyMath = {
+  square,
+  cube
+};
+```
+
+- date.js
+
+```javascript
+// date.js
+const padDateTime = x => {
+  try {
+    return +x < 9 ? x.toString().padStart(2, 0) : x.toString();
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const MyDate = { padDateTime };
+```
+
+- index.js
+
+```javascript
+// index.js入口文件
+import { MyMath } from './math';
+import { MyDate } from './date';
+
+export { MyMath, MyDate };
+```
+
+##### 2. npm 注册
+
+直接去 npm 官网进行注册即可
+
+##### 3. webpack 配置
+
+![](./img/选区_090.png)
+
+- filename: webpack 打包后得到的包名
+- library: 暴露导出库的全局变量名
+- libraryTarget: 导出方式
+  - var: 允许通过 script 标签导入
+  - this: 通过 this 对象
+  - window: 通过注册到全局变量中
+  - umd: 允许以 AMD 或 CMD, 一般导出包都是以这种形式
+- externals 如果有一些导入的包不想打包在自己的库中，依赖外部包可以进行配置
+
+配置完之后进行 webpack 进行打包
+
+```bash
+webpack --config webpack.config.js
+```
+
+##### 4. 配置发布 package.json
+
+![](./img/选区_091.png)
+
+##### 5. 优化
+
+略
+
+##### 6. 发布流程
+
+```bash
+# 完成git上的代码提交流程后执行下面的步骤
+# npm登录　输入登录信息
+npm login
+
+# 如果用的是淘宝源先切回npm源
+npm config set registry http://registry.npmjs.org
+
+# 接入npm
+npm adduser
+
+# 发布
+npm publish
+```
+
+- npm adduser
+
+![](./img/选区_092.png)
+
+- npm publish
+
+![](./img/选区_093.png)
+
+##### 7. 测试包导入
+
+```bash
+yarn add bad-egg-tools
+```
+
+发现可以正常导入, 并且使用，大功告成啦～
+
+---
+
+### 11. Shimming
+
+##### 1. Shim VS polyfill
+
+- shim: 是一个新的库, 将一系列的新的库函数，引入到旧环境(兼容新旧环境推出的一个新的工具库)
+- polyfill: 针对原生的 js 方法而言，兼容新旧版本的原生 API 的函数
+
+二者的关系，polyfill 是用在浏览器 API 上的 shim, shim 范围更大, 例如在 es3 中添加 es5-shim 在 es3 的环境下支持 es5 的 API
+
+##### 2. webpack Shimming 解决问题
+
+- webpack 可以识别 es2015 和 CommonJS 和 AMD 等规范导出的模块，但是有些 library 可能会引用全局依赖，shimming 可以统一这类输出
+- 当通过 CommonJS 导出库的时候，某些包内的 this 指向的为 module.exports.
+- polyfill 的按需加载
+
+##### 3. shimming 全局变量问题解决
+
+- 场景分析: 我们通过 script 标签导入 lodash 和 jquery 的时候，在全局中会自动导入一个\_和\$作为 loadah 和 jquery 的库，这个时候我们就相当于全局注入了这么一个函数，在 webpack 中如何做全局注入(不推荐这么做)
+
+- 解决方法：**使用 webpack.ProvidePlugin**暴露一个全局的方法，然后可供全局调用，该包必须在项目中被安装
+
+![](./img/选区_094.png)
+
+- 调用在全局进行调用\_即调用了 lodash, 调用 join 即调用了\_.join();第二种方法调用更符合按需调用的方法
+
+![](./img/选区_095.png)
+
+##### 4. 细粒度 shimming
+
+- 解决问题: 导出模块内的 this 指向错误问题
+- 问题模拟: 加入一个模块 addBtn
+
+```javascript
+// addBtn
+// 这样导出的this指向的为module不为window
+const _this = this;
+const addBtn = function() {
+  const btn = document.createElement('button');
+  btn.innerHTML = 'Click';
+  btn.onclick = function() {
+    _this.alert('click');
+  };
+  return btn;
+};
+
+module.exports = { addBtn };
+```
+
+- 导入到 index.js 中
+
+![](./img/选区_097.png)
+
+- 模拟结果
+
+![](./img/选区_098.png)
+
+- 解决方法: imports-loader 配置具体模块的局部变量值
+
+![](./img/选区_099.png)
+
+向特定的文件(addBtn.js)中，注入 this,将其值置为 window
+
+- 结果验证：
+
+  ![](./img/选区_100.png)
+
+  正常可用
+
+##### 5. polyfills 的载入
+
+###### 1. 安装 babel-polyfill
+
+```bash
+# 将es6的语法转为es5的兼容版本
+yarn add babel-polyfill
+```
+
+###### 2. 直接将其导入到 index.js 中即可
+
+官网写了一个优化的过程，详情可看[优化 polyfills 导入](https://www.webpackjs.com/guides/shimming/)

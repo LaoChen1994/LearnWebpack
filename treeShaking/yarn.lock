@@ -493,6 +493,16 @@ backo2@1.0.2:
   resolved "https://registry.yarnpkg.com/backo2/-/backo2-1.0.2.tgz#31ab1ac8b129363463e35b3ebb69f4dfcfba7947"
   integrity sha1-MasayLEpNjRj41s+u2n038+6eUc=
 
+bad-egg-tools@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/bad-egg-tools/-/bad-egg-tools-1.0.0.tgz#9eb7c6c1a68559436aa48c8dc5ad9bf12edd757c"
+  integrity sha512-slfBVGu0XUf7abf+B6piqQDZqMij6CYDO4pd+zt1eNfulCo4gSCetAqKPGMOOfAJ6ujBOKueqmNhrbwW3iKGhw==
+  dependencies:
+    lodash "^4.17.15"
+    webpack "4.41.2"
+    webpack-cli "^3.3.10"
+    yarn "^1.19.2"
+
 balanced-match@^1.0.0:
   version "1.0.0"
   resolved "https://registry.npm.taobao.org/balanced-match/download/balanced-match-1.0.0.tgz#89b4d199ab2bee49de164ea02b89ce462d71b767"
