@@ -1145,3 +1145,5 @@ yarn add typescript ts-loader
 ##### 3. 重新打包即可
 
 完成上述设置就可以直接编写 ts 的代码然后通过 webpack 进行打包了
+
+具体代码可以查看[typescript+webpack](https://github.com/LaoChen1994/LearnWebpack/tree/master/12-typescript)
