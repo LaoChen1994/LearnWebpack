@@ -1123,3 +1123,25 @@ yarn add babel-polyfill
 ###### 2. 直接将其导入到 index.js 中即可
 
 官网写了一个优化的过程，详情可看[优化 polyfills 导入](https://www.webpackjs.com/guides/shimming/)
+
+---
+
+### 12. webpack 集成 typescript
+
+##### 1. 安装 typescript-loader
+
+```bash
+# ts安装
+yarn add typescript ts-loader
+```
+
+##### 2. tsconfig.js 配置
+
+![](./img/选区_102.png)
+
+- resole.extensions: 在导入后缀在 extensions 中的文件时，可以不写后缀直接导入
+- module.rules.exclude: 在使用 loader 导入模块的时候排除 node_modules 下面的所有文件
+
+##### 3. 重新打包即可
+
+完成上述设置就可以直接编写 ts 的代码然后通过 webpack 进行打包了
