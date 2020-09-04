@@ -16,7 +16,7 @@
     "file-loader": "^4.3.0",
     "lodash": "^4.17.15",
     "node-sass": "^4.13.0",
-    "papaparse": "^5.1.0",
+    "papaparse": "^5.2.0",
     "sass-loader": "^8.0.0",
     "style-loader": "^1.0.0",
     "webpack": "4.41.2",
