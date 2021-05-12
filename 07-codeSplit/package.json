@@ -13,7 +13,7 @@
   "dependencies": {
     "html-webpack-plugin": "^3.2.0",
     "lodash": "^4.17.15",
-    "mathjs": "^6.2.5",
+    "mathjs": "^7.5.1",
     "webpack": "4.41.2",
     "webpack-cli": "^3.3.10",
     "yarn": "^1.19.2"
