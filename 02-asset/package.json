@@ -15,7 +15,7 @@
     "csv-loader": "^3.0.2",
     "file-loader": "^4.3.0",
     "lodash": "^4.17.15",
-    "node-sass": "^4.13.0",
+    "node-sass": "^7.0.0",
     "papaparse": "^5.1.0",
     "sass-loader": "^8.0.0",
     "style-loader": "^1.0.0",
